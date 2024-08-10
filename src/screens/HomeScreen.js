@@ -39,6 +39,7 @@ const HomeScreen = () => {
   const [filteredData, setFilteredData] = useState(dummyData);
 
   const resetFilters = () => {
+    setSortOptions({steps: 0, distance: 0, heartRate: 0});
     setSortBy('');
     setFilterBy('');
     setSearchQuery('');
@@ -47,7 +48,7 @@ const HomeScreen = () => {
 
   const handlePageChange = page => {
     setCurrentPage(page);
-    // 여기에 페이지 변경 시 데이터를 새로 불러오는 로직을 추가할 수 있습니다.
+
   };
 
   const handleSearch = () => {
@@ -58,10 +59,6 @@ const HomeScreen = () => {
       return;
     }
 
-    // 검색 처리 로직
-    console.log('Searching for:', trimmedQuery);
-
-    // 필터링된 데이터를 업데이트합니다.
     const filtered = dummyData.filter(item =>
       item.name.toLowerCase().includes(trimmedQuery.toLowerCase()),
     );
@@ -79,7 +76,7 @@ const HomeScreen = () => {
     let sortedData = [...filteredData];
     const sortOrder = Object.entries(sortOptions)
       .filter(([_, value]) => value !== 0)
-      .sort((a, b) => b[1] - a[1]); // 정렬 우선순위를 위해 역순 정렬
+      .sort((a, b) => b[1] - a[1]);
 
     sortedData.sort((a, b) => {
       for (let [key, order] of sortOrder) {
@@ -98,19 +95,39 @@ const HomeScreen = () => {
       case 0:
         return {name: 'sort-amount-down', color: 'gray'};
       case 1:
-        return {name: 'sort-amount-down', color: 'blue'};
+        return {name: 'sort-amount-down', color: '#4374D9'};
       case 2:
-        return {name: 'sort-amount-up-alt', color: 'blue'};
+        return {name: 'sort-amount-up-alt', color: '#4374D9'};
     }
   };
 
 
   const renderItem = ({item}) => (
     <View style={styles.listItem}>
-      <Text>{item.name}</Text>
-      <Text>Steps: {item.steps}</Text>
-      <Text>Distance: {item.distance} km</Text>
-      <Text>Heart Rate: {item.heartRate} bpm</Text>
+      <View style={styles.nameColumn}>
+        <Text style={styles.nameText}>{item.name}</Text>
+      </View>
+      <View style={styles.dataColumn}>
+        <Text style={styles.dataTitle}>심박수</Text>
+        <View style={styles.dataRow}>
+          <Icon name="heartbeat" size={16} color="#FF6B6B" />
+          <Text style={styles.dataText}>{item.heartRate} bpm</Text>
+        </View>
+      </View>
+      <View style={styles.dataColumn}>
+        <Text style={styles.dataTitle}>걸음수</Text>
+        <View style={styles.dataRow}>
+          <Icon name="shoe-prints" size={16} color="#4DABF7" />
+          <Text style={styles.dataText}>{item.steps}</Text>
+        </View>
+      </View>
+      <View style={styles.dataColumn}>
+        <Text style={styles.dataTitle}>거리</Text>
+        <View style={styles.dataRow}>
+          <Icon name="route" size={16} color="#82C91E" />
+          <Text style={styles.dataText}>{item.distance} km</Text>
+        </View>
+      </View>
     </View>
   );
 
@@ -129,7 +146,6 @@ const HomeScreen = () => {
         value={searchQuery}
         onChangeText={setSearchQuery}
         onSubmitEditing={() => {
-          // 엔터키 입력 시 공백 제거 후 검색 수행
           setSearchQuery(prev => prev.trim());
           handleSearch();
         }}
@@ -137,9 +153,12 @@ const HomeScreen = () => {
       />
 
       <TouchableOpacity
-        style={styles.filterButton}
+        style={[
+          styles.filterButton,
+          showSortFilter && {backgroundColor: '#B2CCFF'},
+        ]}
         onPress={() => setShowSortFilter(!showSortFilter)}>
-        <Text>필터 및 정렬</Text>
+        <Text style={styles.buttonText}>필터 및 정렬</Text>
       </TouchableOpacity>
 
       {showSortFilter && (
@@ -230,6 +249,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+    color: 'black',
   },
   header: {
     flexDirection: 'row',
@@ -261,16 +281,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   applyButton: {
-    backgroundColor: 'black',
+    backgroundColor: '#5D5D5D',
     padding: 10,
     borderRadius: 5,
     margin: 5,
+    justifyContent: 'center',
   },
   resetButton: {
-    backgroundColor: 'red',
+    backgroundColor: '#F15F5F',
     padding: 10,
     borderRadius: 5,
     margin: 5,
+    marginLeft: 0,
+    justifyContent: 'center',
   },
   filterButtonText: {
     color: 'white',
@@ -317,11 +340,43 @@ const styles = StyleSheet.create({
     color: 'black',
     marginRight: 10,
   },
-  picker:{
-    width:"50%",
+  picker: {
+    width: '50%',
     backgroundColor: 'white',
-    borderRadius:5,
-  }
+    borderRadius: 5,
+  },
+  listItem: {
+    flexDirection: 'row',
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+    alignItems: 'center',
+  },
+  nameColumn: {
+    flex: 2,
+    marginRight: 10,
+  },
+  nameText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  dataColumn: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  dataTitle: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  dataRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dataText: {
+    fontSize: 14,
+    marginLeft: 4,
+  },
 });
 
 export default HomeScreen;
