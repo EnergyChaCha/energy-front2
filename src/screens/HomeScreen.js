@@ -9,25 +9,22 @@ import {
   Alert,
 } from 'react-native';
 import {Picker} from '@react-native-picker/picker';
-import Pagination from '../components/Pagination';
-import Icon from "react-native-vector-icons/FontAwesome5";
+import Icon from 'react-native-vector-icons/FontAwesome5';
 
 const HomeScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOptions, setSortOptions] = useState({
-    steps: 0, // 0: 미적용, 1: 오름차순, 2: 내림차순
+    steps: 0,
     distance: 0,
     heartRate: 0,
   });
-
   const [showSortFilter, setShowSortFilter] = useState(false);
-  const [sortBy, setSortBy] = useState('');
   const [filterBy, setFilterBy] = useState('');
-  const [itemsPerPage, setItemsPerPage] = useState('10');
+  const [filterValue, setFilterValue] = useState('');
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(10); // 예시로 10페이지로 설정
 
-  // 더미 데이터
+  // 더미 데이터 생성
   const dummyData = Array.from({length: 50}, (_, i) => ({
     id: i + 1,
     name: `Staff ${i + 1}`,
@@ -40,29 +37,19 @@ const HomeScreen = () => {
 
   const resetFilters = () => {
     setSortOptions({steps: 0, distance: 0, heartRate: 0});
-    setSortBy('');
     setFilterBy('');
+    setFilterValue('');
     setSearchQuery('');
     setFilteredData(dummyData);
-  };
-
-  const handlePageChange = page => {
-    setCurrentPage(page);
-
+    setCurrentPage(1);
   };
 
   const handleSearch = () => {
-    const trimmedQuery = searchQuery.trim();
-
-    if (trimmedQuery.length < 2) {
+    if (searchQuery.trim().length < 2) {
       Alert.alert('검색 오류', '최소 2글자 이상 입력해주세요.');
       return;
     }
-
-    const filtered = dummyData.filter(item =>
-      item.name.toLowerCase().includes(trimmedQuery.toLowerCase()),
-    );
-    setFilteredData(filtered);
+    applyFilters();
   };
 
   const toggleSortOption = option => {
@@ -73,21 +60,58 @@ const HomeScreen = () => {
   };
 
   const applyFilters = () => {
-    let sortedData = [...filteredData];
-    const sortOrder = Object.entries(sortOptions)
-      .filter(([_, value]) => value !== 0)
-      .sort((a, b) => b[1] - a[1]);
-
-    sortedData.sort((a, b) => {
-      for (let [key, order] of sortOrder) {
-        if (a[key] < b[key]) return order === 1 ? -1 : 1;
-        if (a[key] > b[key]) return order === 1 ? 1 : -1;
-      }
-      return 0;
+    // API 호출 시뮬레이션
+    console.log('Calling API with filters:', {
+      searchQuery,
+      sortOptions,
+      filterBy,
+      filterValue,
     });
 
-    setFilteredData(sortedData);
-    setShowSortFilter(false);
+    // 실제 API 호출 대신 setTimeout으로 비동기 처리 시뮬레이션
+    setTimeout(() => {
+      let result = [...dummyData];
+
+      // 검색 필터 적용
+      if (searchQuery.trim().length >= 2) {
+        result = result.filter(item =>
+          item.name.toLowerCase().includes(searchQuery.toLowerCase()),
+        );
+      }
+
+      // 정렬 적용
+      const sortOrder = Object.entries(sortOptions)
+        .filter(([_, value]) => value !== 0)
+        .sort((a, b) => b[1] - a[1]);
+
+      result.sort((a, b) => {
+        for (let [key, order] of sortOrder) {
+          if (a[key] < b[key]) return order === 1 ? -1 : 1;
+          if (a[key] > b[key]) return order === 1 ? 1 : -1;
+        }
+        return 0;
+      });
+
+      // 필터 적용
+      if (filterBy && filterValue) {
+        result = result.filter(item => {
+          switch (filterBy) {
+            case 'heartRate':
+              return item.heartRate > parseInt(filterValue);
+            case 'steps':
+              return item.steps < parseInt(filterValue);
+            case 'distance':
+              return item.distance > parseFloat(filterValue);
+            default:
+              return true;
+          }
+        });
+      }
+
+      setFilteredData(result);
+      setCurrentPage(1);
+      setShowSortFilter(false);
+    }, 500); // 500ms 딜레이로 API 호출 시뮬레이션
   };
 
   const getSortIcon = option => {
@@ -100,7 +124,6 @@ const HomeScreen = () => {
         return {name: 'sort-amount-up-alt', color: '#4374D9'};
     }
   };
-
 
   const renderItem = ({item}) => (
     <View style={styles.listItem}>
@@ -131,13 +154,95 @@ const HomeScreen = () => {
     </View>
   );
 
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+
+  const Pagination = ({currentPage, totalPages, onPageChange}) => {
+    const pageNumbers = [];
+    const maxPagesToShow = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+    let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+    if (endPage - startPage + 1 < maxPagesToShow) {
+      startPage = Math.max(1, endPage - maxPagesToShow + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(i);
+    }
+
+    return (
+      <View style={styles.pagination}>
+        <TouchableOpacity
+          onPress={() => onPageChange(1)}
+          disabled={currentPage === 1}>
+          <Text
+            style={[
+              styles.paginationText,
+              currentPage === 1 && styles.disabledText,
+            ]}>
+            &lt;&lt;
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}>
+          <Text
+            style={[
+              styles.paginationText,
+              currentPage === 1 && styles.disabledText,
+            ]}>
+            &lt;
+          </Text>
+        </TouchableOpacity>
+        {pageNumbers.map(number => (
+          <TouchableOpacity key={number} onPress={() => onPageChange(number)}>
+            <Text
+              style={[
+                styles.paginationText,
+                currentPage === number && styles.activePage,
+              ]}>
+              {number}
+            </Text>
+          </TouchableOpacity>
+        ))}
+        <TouchableOpacity
+          onPress={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}>
+          <Text
+            style={[
+              styles.paginationText,
+              currentPage === totalPages && styles.disabledText,
+            ]}>
+            &gt;
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => onPageChange(totalPages)}
+          disabled={currentPage === totalPages}>
+          <Text
+            style={[
+              styles.paginationText,
+              currentPage === totalPages && styles.disabledText,
+            ]}>
+            &gt;&gt;
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  const isFilterActive =
+    Object.values(sortOptions).some(v => v !== 0) ||
+    filterBy !== '' ||
+    filterValue !== '';
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>STAFF LIST</Text>
-        {/* <TouchableOpacity>
-          <Icon name="settings-outline" size={24} color="black" />
-        </TouchableOpacity> */}
       </View>
 
       <TextInput
@@ -145,10 +250,7 @@ const HomeScreen = () => {
         placeholder="근무자 이름으로 검색"
         value={searchQuery}
         onChangeText={setSearchQuery}
-        onSubmitEditing={() => {
-          setSearchQuery(prev => prev.trim());
-          handleSearch();
-        }}
+        onSubmitEditing={handleSearch}
         returnKeyType="search"
       />
 
@@ -199,7 +301,7 @@ const HomeScreen = () => {
             </View>
             {(filterBy !== '' ||
               Object.values(sortOptions).some(value => value !== 0)) && (
-              <View style={styles.filterActions}>
+              <View style={styles.filterControlButton}>
                 <TouchableOpacity
                   style={styles.applyButton}
                   onPress={applyFilters}>
@@ -218,8 +320,8 @@ const HomeScreen = () => {
 
       <View style={styles.itemsPerPageContainer}>
         <Picker
-          selectedValue={itemsPerPage}
-          onValueChange={itemValue => setItemsPerPage(itemValue)}
+          selectedValue={itemsPerPage.toString()}
+          onValueChange={itemValue => setItemsPerPage(parseInt(itemValue))}
           style={styles.itemsPerPagePicker}>
           <Picker.Item label="10" value="10" />
           <Picker.Item label="20" value="20" />
@@ -228,10 +330,7 @@ const HomeScreen = () => {
       </View>
 
       <FlatList
-        data={filteredData.slice(
-          (currentPage - 1) * parseInt(itemsPerPage),
-          currentPage * parseInt(itemsPerPage),
-        )}
+        data={currentItems}
         renderItem={renderItem}
         keyExtractor={item => item.id.toString()}
       />
@@ -239,17 +338,16 @@ const HomeScreen = () => {
       <Pagination
         currentPage={currentPage}
         totalPages={totalPages}
-        onPageChange={handlePageChange}
+        onPageChange={setCurrentPage}
       />
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    color: 'black',
+    backgroundColor: '#F5F5F5',
   },
   header: {
     flexDirection: 'row',
@@ -260,43 +358,93 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: '#333',
   },
   searchBox: {
     height: 40,
-    borderColor: 'gray',
+    borderColor: '#DDD',
     borderWidth: 1,
+    borderRadius: 5,
     paddingLeft: 10,
     marginBottom: 10,
+    backgroundColor: '#FFF',
   },
   filterButton: {
-    backgroundColor: '#ddd',
+    backgroundColor: '#4374D9',
     padding: 10,
     alignItems: 'center',
     marginBottom: 10,
+    borderRadius: 5,
+  },
+  buttonText: {
+    fontWeight: 'bold',
+    marginRight:5
   },
   sortFilterForm: {
     marginBottom: 10,
+    backgroundColor: '#FFF',
+    padding: 10,
+    borderRadius: 5,
+  },
+  sortTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#333',
+  },
+  sortButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    color: 'black',
+  },
+  sortButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0F0F0',
+    padding: 10,
+    borderRadius: 5,
+    paddingHorizontal: 20,
+  },
+  activeSortButton: {
+    backgroundColor: '#B2CCFF',
   },
   filterActions: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  filterControlButton:{
+    width:"100%",
+    marginLeft:20
+  },
+  picker: {
+    width: '50%',
+    height: 55,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 5,
+    padding: 1,
+  },
+  resetButton: {
+    width: '40%',
+    backgroundColor: '#F15F5F',
+    padding: 10,
+    borderRadius: 5,
+    margin: 5,
+    alignItems: 'center',
   },
   applyButton: {
+    width: '40%',
     backgroundColor: '#5D5D5D',
     padding: 10,
     borderRadius: 5,
     margin: 5,
     justifyContent: 'center',
-  },
-  resetButton: {
-    backgroundColor: '#F15F5F',
-    padding: 10,
-    borderRadius: 5,
-    margin: 5,
-    marginLeft: 0,
-    justifyContent: 'center',
+    alignItems: 'center',
   },
   filterButtonText: {
-    color: 'white',
+    color: '#FFF',
+    fontWeight: 'bold',
   },
   itemsPerPageContainer: {
     alignItems: 'flex-end',
@@ -304,53 +452,16 @@ const styles = StyleSheet.create({
   },
   itemsPerPagePicker: {
     width: 100,
-  },
-  listItem: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-  },
-  pagination: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  sortTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  sortButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  sortButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-    padding: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    marginRight: 10,
-    backgroundColor: 'white',
-  },
-  buttonText: {
-    color: 'black',
-    marginRight: 10,
-  },
-  picker: {
-    width: '50%',
-    backgroundColor: 'white',
+    backgroundColor: '#FFF',
     borderRadius: 5,
   },
   listItem: {
     flexDirection: 'row',
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-    alignItems: 'center',
+    padding: 15,
+    backgroundColor: '#FFF',
+    borderRadius: 5,
+    marginBottom: 10,
+    elevation: 2,
   },
   nameColumn: {
     flex: 2,
@@ -359,6 +470,7 @@ const styles = StyleSheet.create({
   nameText: {
     fontSize: 16,
     fontWeight: 'bold',
+    color: '#333',
   },
   dataColumn: {
     flex: 1,
@@ -376,6 +488,21 @@ const styles = StyleSheet.create({
   dataText: {
     fontSize: 14,
     marginLeft: 4,
+    color: '#333',
+  },
+  pagination: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  paginationText: {
+    fontSize: 16,
+    color: '#4374D9',
+    fontWeight: 'bold',
+  },
+  disabledText: {
+    color: '#CCC',
   },
 });
 
