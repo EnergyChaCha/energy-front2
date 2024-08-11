@@ -35,8 +35,7 @@ const FilterSort = ({
         order: newSortOptions.length + 1,
       });
     }
-
-    // Reset order for remaining items
+    
     newSortOptions = newSortOptions.map((item, index) => ({
       ...item,
       order: index + 1,

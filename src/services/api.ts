@@ -29,7 +29,7 @@ export const getStaffList = async (
       if (filter == 'distance') params.distance = 6;
     }
     const response = await api.get('/cj/searchName', {params});
-    return response.data.result;
+    return response.data.result;    
   } catch (error) {
     console.log(error);
   }
