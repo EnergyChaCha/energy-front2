@@ -4,11 +4,23 @@ import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
 const Pagination = ({currentPage, totalPages, onPageChange}) => {
   const pageNumbers = [];
   const maxPagesToShow = 5;
-  let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
-  let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+  let startPage, endPage;
 
-  if (endPage - startPage + 1 < maxPagesToShow) {
-    startPage = Math.max(1, endPage - maxPagesToShow + 1);
+  if (totalPages <= maxPagesToShow) {
+    startPage = 1;
+    endPage = totalPages;
+  } else {
+    const middlePage = Math.floor(maxPagesToShow / 2);
+    if (currentPage <= middlePage) {
+      startPage = 1;
+      endPage = maxPagesToShow;
+    } else if (currentPage + middlePage >= totalPages) {
+      startPage = totalPages - maxPagesToShow + 1;
+      endPage = totalPages;
+    } else {
+      startPage = currentPage - middlePage + 1;
+      endPage = currentPage + middlePage + 1;
+    }
   }
 
   for (let i = startPage; i <= endPage; i++) {
@@ -97,6 +109,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#4374D9',
     color: 'white',
     borderRadius: 5,
+    paddingHorizontal:10
   },
 });
 

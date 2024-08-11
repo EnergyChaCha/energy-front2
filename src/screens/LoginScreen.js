@@ -20,7 +20,6 @@ export default function LoginScreen({navigation}) {
     try {
       const result = await signIn(username, password);
       if (result) {
-        console.log(result);
         await saveToken(result.accessToken);
         navigation.navigate('Home');
       } else {
